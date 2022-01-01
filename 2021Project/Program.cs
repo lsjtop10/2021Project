@@ -347,7 +347,7 @@ namespace _2021Project
             {
                 List<Cell> result = new List<Cell>();
 
-                Console.WriteLine("CASE: " + i.ToString() + " ----------------------");
+                Console.WriteLine("CASE: " + (i + 1).ToString() + " ----------------------");
                 iO.PrintGentype(mother[i]);
                 Console.WriteLine("*");
                 iO.PrintGentype(father[i]);
@@ -361,7 +361,7 @@ namespace _2021Project
                     Console.WriteLine();
                 }
 
-                sw.WriteLine("CASE: " + i.ToString() + " ----------------------");
+                sw.WriteLine("CASE: " + (i + 1).ToString() + " ----------------------");
                 iO.WriteGenTypeToFile(sw, mother[i]);
                 sw.WriteLine("*");
                 iO.WriteGenTypeToFile(sw, father[i]);

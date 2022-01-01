@@ -4,7 +4,28 @@ using System.Linq;
 
 namespace _2021Project
 {
+    class InvaildValueException : Exception
+    {
+        public enum State { ShapeISNotMatch = 0, PloidyISNotMatch }
+        public InvaildValueException(State state)
+        {
+            Msg = state;
+            switch (state)
+            {
+                case State.ShapeISNotMatch:
+                    explanation = "Shape is not match";
+                    break;
+                case State.PloidyISNotMatch:
+                    explanation = "Ploidy is not match";
+                    break;
+            }
 
+
+        }
+
+        public State Msg;
+        public string explanation;
+    }
 
     class Cell
     {
@@ -12,7 +33,7 @@ namespace _2021Project
         public int Ploidy;
         private int NumberOfGen;
 
-        int[] Shape;
+        public int[] Shape;
         string left; 
         string right;
 
@@ -33,7 +54,7 @@ namespace _2021Project
 
             if(Ploidy != 2)
             {
-                throw new Exception();
+                throw new InvaildValueException(InvaildValueException.State.PloidyISNotMatch);
             }
 
             left = leftGen;
@@ -45,7 +66,7 @@ namespace _2021Project
          
             if (Ploidy != 1)
             {
-                throw new Exception();
+                throw new InvaildValueException(InvaildValueException.State.PloidyISNotMatch);
             }
 
             left = Gen;
@@ -135,17 +156,39 @@ namespace _2021Project
             return daughtercells;
         }
 
+        static public List<Cell> mateCells(Cell cell1, Cell cell2)
+        {
+            List<Cell> dautherOfCell1 = cell1.meiosis();
+            List<Cell> dautherOfcell2 = cell2.meiosis();
 
+            List<Cell> result = new List<Cell>();
+
+            foreach(Cell val1 in dautherOfCell1)
+            {
+                foreach(Cell val2 in dautherOfcell2)
+                {
+                    if (!cell1.Shape.SequenceEqual(cell2.Shape)) { throw new InvaildValueException(InvaildValueException.State.ShapeISNotMatch); }
+
+                    Cell tmp = new Cell(2, cell1.Shape);
+                    tmp.SetGenType(val1.left, val2.left);
+                    result.Add(tmp);
+                }
+            }
+
+            return result;
+        }
+        
     }
+
 
     class Program
     {
         static void Main(string[] args)
         {
-            Cell m = new Cell(2, new int[] { 1, 2 });
-            m.SetGenType("Abd","AbD");
-           // Cell f = new Cell(2, new int[] { 1, 1, 1 });
-            List<Cell> DC = m.meiosis();
+            Cell m = new Cell(2, new int[] { 1,1});
+            Cell f = new Cell(2, new int[] { 1,1});
+
+     
         }
     }
 }

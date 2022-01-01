@@ -1,24 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+
 namespace _2021Project
 {
-    
-    class Breeder
-    {
 
-    }
 
     class Cell
     {
-        //비분리는 고려하지 않음
-        //Shape -> 염색체가 어떻게 구성됐나 "1/1/1/2/1" 나중에 private로 바꾸기
-
+        
         public int Ploidy;
         private int NumberOfGen;
 
         int[] Shape;
-        char[] left; 
-        char[] right;
+        string left; 
+        string right;
 
         public Cell(int ploidy, int[] shape)
         {
@@ -30,19 +26,9 @@ namespace _2021Project
                 NumberOfGen += i;
             }
 
-            if(Ploidy == 1)
-            {
-                left = new char[NumberOfGen];
-            }
-            else if(Ploidy == 2)
-            {
-                left = new char[NumberOfGen];
-                right = new char[NumberOfGen];
-            }
-
         }
 
-        public void SetGenType(char[] leftGen, char[] rightGen)
+        public void SetGenType(string leftGen, string rightGen)
         {
 
             if(Ploidy != 2)
@@ -54,7 +40,7 @@ namespace _2021Project
             right = rightGen;
         }
 
-        public void SetGenType(char[] Gen)
+        public void SetGenType(string Gen)
         {
          
             if (Ploidy != 1)
@@ -110,36 +96,46 @@ namespace _2021Project
 
         public List<Cell> meiosis()
         {
-            List<Cell> daughtercells = new List<Cell>();
             List<bool[]> combination = GetCombination(Shape.Length);
+            string[] _case = new string[combination.Count];
 
-            for(int k = 0; k < combination.Count; k++)
+            for (int k = 0; k < combination.Count; k++)
             {
-                Cell _case = new Cell(1, Shape);
+                //생식세포 분열 시뮬레이션
                 int ptr = 0;
                 for(int i = 0; i < Shape.Length; i++)
                 {
-                    for(int j = 0; j < Shape[i]; j++)
+                    if(combination[k][i] == true)
                     {
-                        //true이면 left
-                        if(combination[k][i] == true)
-                        {
-                            _case.left[ptr] = this.left[ptr];
-                        }
-                        else
-                        {
-                            _case.left[ptr] = this.right[ptr];
-                        }
-                        ptr++;
+                        _case[k] = _case[k] + this.left.Substring(ptr, Shape[i]);
                     }
-                }
+                    else
+                    {
+                        _case[k] = _case[k] + this.right.Substring(ptr, Shape[i]);
+                        
+                    }
+                    ptr += Shape[i];
 
-                daughtercells.Add(_case);
-                
+                }
             }
 
+            //중복제거
+            List<Cell> daughtercells = new List<Cell>();
+            _case = _case.Distinct().ToArray();
+           
+            //구한 유전자형의 경우로 세포 객체 생성해서 딸세포 리스트에 추가
+            foreach(string val in _case)
+            {
+                Cell cell = new Cell(1, Shape);
+                cell.SetGenType(val);
+                daughtercells.Add(cell);
+            }
+
+            //만들어진 딸세포 리스트 반환
             return daughtercells;
         }
+
+
     }
 
     class Program
@@ -147,7 +143,7 @@ namespace _2021Project
         static void Main(string[] args)
         {
             Cell m = new Cell(2, new int[] { 1, 2 });
-            m.SetGenType(new char[] { 'A', 'b', 'D', }, new char[] { 'A', 'b', 'd', });
+            m.SetGenType("Abd","AbD");
            // Cell f = new Cell(2, new int[] { 1, 1, 1 });
             List<Cell> DC = m.meiosis();
         }

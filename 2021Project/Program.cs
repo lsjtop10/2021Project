@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace _2021Project
 {
     class InvaildValueException : Exception
     {
-        public enum State { ShapeISNotMatch = 0, PloidyISNotMatch }
+        public enum State { ShapeISNotMatch = 0, PloidyISNotMatch, OddNumberOfCell}
         public InvaildValueException(State state)
         {
             Msg = state;
@@ -18,6 +20,9 @@ namespace _2021Project
                 case State.PloidyISNotMatch:
                     explanation = "Ploidy is not match";
                     break;
+                case State.OddNumberOfCell:
+                    explanation = "The number of cells is odd.";
+                    break;
             }
 
 
@@ -27,6 +32,127 @@ namespace _2021Project
         public string explanation;
     }
 
+    class CellIO
+    {
+      
+        public List<Cell> ParseCell(string filePath)
+        {
+            
+            StreamReader sr = new StreamReader(filePath);
+            List<Cell> result = new List<Cell>();
+
+            while (!sr.EndOfStream)
+            {
+                // 한 줄씩 읽어온다.
+                string buf = sr.ReadLine();
+                if (buf[1].Equals("!")) {continue;};
+
+                // 쉼표( , )를 기준으로 데이터를 분리한다.
+                string[] data = buf.Split(',');
+                string[] shapeStr= data[0].Split('/');
+                int[] shape = new int[shapeStr.Length];
+                
+                for(int i = 0; i < shapeStr.Length; i++)
+                {
+                    shape[i] = Convert.ToInt32(shapeStr[i]);
+                }
+                
+                Cell temp = new Cell(2, shape);
+                temp.SetGenType(data[1],data[2]);
+                result.Add(temp);
+            }
+
+            sr.Close();
+            return result;
+        }
+
+        private void PrintVarticaly(StreamWriter sw, string left, string right)
+        {
+            for (int i = 0; i < left.Length; i++)
+            {
+                sw.WriteLine(left[i] + "|" + right[i]);
+            }
+        }
+
+        private void PrintVarticaly(string left, string right)
+        {
+            for(int i = 0; i < left.Length; i++)
+            {
+                Console.WriteLine(left[i] + "|" + right[i]);
+            }
+        }
+
+        public void PrintGentype(Cell input)
+        {
+            if(input.Ploidy == 1)
+            {
+                for(int i = 0; i < input.Left.Length; i++)
+                {
+                    Console.WriteLine(input.Left[i]);
+                }
+            }
+            else
+            {
+                int ptr = 0;
+                for (int i = 0; i < input.Shape.Length; i++)
+                {
+                    string bufL = input.Left.Substring(ptr, input.Shape[i]);
+                    string bufR = input.Right.Substring(ptr, input.Shape[i]);
+
+                    MatchCollection mcL = Regex.Matches(bufL, "[A-Z]");
+                    MatchCollection mcR = Regex.Matches(bufR, "[A-Z]");
+
+                    if(mcL.Count >= mcR.Count)
+                    {
+                        PrintVarticaly(bufL, bufR);
+                    }
+                    else
+                    {
+                        PrintVarticaly(bufR, bufL);
+                    }
+                    ptr += input.Shape[i];
+                    Console.WriteLine("---");
+                }
+            }
+        }
+
+        public void WriteGenTypeToFile(StreamWriter sw, Cell input)
+        {
+            if (input.Ploidy == 1)
+            {
+                for (int i = 0; i < input.Left.Length; i++)
+                {
+                    sw.WriteLine(input.Left[i]);
+                }
+            }
+            else
+            {
+                int ptr = 0;
+                for (int i = 0; i < input.Shape.Length; i++)
+                {
+                    string bufL = input.Left.Substring(ptr, input.Shape[i]);
+                    string bufR = input.Right.Substring(ptr, input.Shape[i]);
+
+                    MatchCollection mcL = Regex.Matches(bufL, "[A-Z]");
+                    MatchCollection mcR = Regex.Matches(bufR, "[A-Z]");
+
+                    if (mcL.Count >= mcR.Count)
+                    {
+                        PrintVarticaly(sw,bufL, bufR);
+                    }
+                    else
+                    {
+                        PrintVarticaly(sw, bufR, bufL);
+                    }
+                    ptr += input.Shape[i];
+                    sw.WriteLine("---");
+                }
+            }
+
+        }
+    }
+
+
     class Cell
     {
         
@@ -34,8 +160,8 @@ namespace _2021Project
         private int NumberOfGen;
 
         public int[] Shape;
-        string left; 
-        string right;
+        public string Left; 
+        public string Right;
 
         public Cell(int ploidy, int[] shape)
         {
@@ -57,8 +183,8 @@ namespace _2021Project
                 throw new InvaildValueException(InvaildValueException.State.PloidyISNotMatch);
             }
 
-            left = leftGen;
-            right = rightGen;
+            Left = leftGen;
+            Right = rightGen;
         }
 
         public void SetGenType(string Gen)
@@ -69,7 +195,7 @@ namespace _2021Project
                 throw new InvaildValueException(InvaildValueException.State.PloidyISNotMatch);
             }
 
-            left = Gen;
+            Left = Gen;
         }
         private List<bool[]> GetCombination(int num)
         {
@@ -128,16 +254,16 @@ namespace _2021Project
                 {
                     if(combination[k][i] == true)
                     {
-                        _case[k] = _case[k] + this.left.Substring(ptr, Shape[i]);
+                        _case[k] = _case[k] + this.Left.Substring(ptr, Shape[i]);
                     }
                     else
                     {
-                        _case[k] = _case[k] + this.right.Substring(ptr, Shape[i]);
+                        _case[k] = _case[k] + this.Right.Substring(ptr, Shape[i]);
                         
                     }
                     ptr += Shape[i];
-
                 }
+                
             }
 
             //중복제거
@@ -156,7 +282,7 @@ namespace _2021Project
             return daughtercells;
         }
 
-        static public List<Cell> mateCells(Cell cell1, Cell cell2)
+        static public List<Cell> MateCells(Cell cell1, Cell cell2)
         {
             List<Cell> dautherOfCell1 = cell1.meiosis();
             List<Cell> dautherOfcell2 = cell2.meiosis();
@@ -170,7 +296,7 @@ namespace _2021Project
                     if (!cell1.Shape.SequenceEqual(cell2.Shape)) { throw new InvaildValueException(InvaildValueException.State.ShapeISNotMatch); }
 
                     Cell tmp = new Cell(2, cell1.Shape);
-                    tmp.SetGenType(val1.left, val2.left);
+                    tmp.SetGenType(val1.Left, val2.Left);
                     result.Add(tmp);
                 }
             }
@@ -180,15 +306,77 @@ namespace _2021Project
         
     }
 
-
     class Program
     {
+        const string InputFilePath = @".\input.txt";
+        const string OutputFilePath = @".\Output.txt";
+
         static void Main(string[] args)
         {
-            Cell m = new Cell(2, new int[] { 1,1});
-            Cell f = new Cell(2, new int[] { 1,1});
+        
+            List<Cell> mother= new List<Cell>();
+            List<Cell> father = new List<Cell>();
+            CellIO iO = new CellIO();
 
-     
+            List<Cell> wholeCells = iO.ParseCell(InputFilePath);
+            bool IsCellOfmather = false;
+
+            if(wholeCells.Count % 2 != 0)
+            {
+                throw new InvaildValueException(InvaildValueException.State.OddNumberOfCell);
+            }
+
+            for(int i = 0; i < wholeCells.Count; i++)
+            {
+                if(IsCellOfmather == true)
+                {
+                    mother.Add(wholeCells[i]);
+                    IsCellOfmather = false;
+                }
+                else
+                {
+                    father.Add(wholeCells[i]);
+                    IsCellOfmather = true;
+                }
+            }
+
+            StreamWriter sw = new StreamWriter(OutputFilePath);
+            
+
+            for (int i = 0; i < mother.Count; i++)
+            {
+                List<Cell> result = new List<Cell>();
+
+                Console.WriteLine("CASE: " + i.ToString() + " ----------------------");
+                iO.PrintGentype(mother[i]);
+                Console.WriteLine("*");
+                iO.PrintGentype(father[i]);
+                Console.WriteLine(":");
+                
+                Console.WriteLine();
+                result = Cell.MateCells(mother[i], father[i]);
+                foreach (Cell val in result)
+                {
+                    iO.PrintGentype(val);
+                    Console.WriteLine();
+                }
+
+                sw.WriteLine("CASE: " + i.ToString() + " ----------------------");
+                iO.WriteGenTypeToFile(sw, mother[i]);
+                sw.WriteLine("*");
+                iO.WriteGenTypeToFile(sw, father[i]);
+                sw.WriteLine(":");
+
+                sw.WriteLine();
+                foreach (Cell val in result)
+                {
+                    iO.WriteGenTypeToFile(sw, val);
+                    sw.WriteLine();
+                }
+
+
+            }
+            sw.Close();
         }
     }
 }
